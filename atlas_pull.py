@@ -96,13 +96,17 @@ def atlas_update():
     # Getting previous hour timestamps
     now = datetime.now()
     
-    start_hour = datetime(now.year, 1, 26, 6, 0, 0)
-    end_hour = datetime(now.year, now.month, 1, 6, 0, 0)
+    # Calculate the most recent Saturday
+    previous_saturday = now - timedelta(days=(now.weekday() + 2) % 7)
+    previous_saturday = previous_saturday.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    print("Start hour: ", start_hour)
-    print("Last hour: ", end_hour)
-    start_hour = datetime.timestamp(start_hour)
-    end_hour = datetime.timestamp(end_hour)
+    # Calcuate the previous Sunday (start of the week)
+    previous_sunday = previous_saturday - timedelta(days = 6)
+
+    print("Start hour: ", previous_sunday)
+    print("Last hour: ", previous_saturday)
+    start_hour = datetime.timestamp(previous_sunday)
+    end_hour = datetime.timestamp(previous_saturday)
 
     to_post = {
         "variables": {
