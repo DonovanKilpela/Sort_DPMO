@@ -6,7 +6,7 @@ import json
 import requests
 import os
 import sys
-
+from openpyxl import load_workbook
 import pandas as pd
 
 import calendar
@@ -39,7 +39,7 @@ def mw_cookie():
     cookies = {}
     # Opening the file and looking at timestamp for expired cookie, running
     # mwinit -o --aea again or getting the cookie
-    #now = calendar.timegm(datetime.utcnow().utctimetuple())
+
     now = datetime.now(timezone.utc).timestamp()  # Timezone-aware
 
     for line in range(4, len(cookie_file)):
@@ -51,6 +51,18 @@ def mw_cookie():
             cookie_file[line].split('\t')[6], '\n', '')
     return cookies
 
+def read_data():
+    wb = load_workbook('Weekly DPMO Tracker.xlsm')
+
+    controls = wb['Controls']
+
+    DPMO_Under = controls['C2'].value
+    Opps_Under = controls['C3'].value
+
+    DPMO_Top = controls['G2'].value
+    Opps_Top = controls['G3'].value
+
+    return DPMO_Under,Opps_Under,DPMO_Top,Opps_Top
 
 def atlas_pull(query):
     req = requests.Session()
@@ -90,9 +102,9 @@ def atlas_pull(query):
 
 
 def atlas_update():
-    global atlas_df, _ap, postRes
+    global atlas_df, _ap, postRes, _dpmo_under, _opps_under, _dpmo_top, _opps_top
     atlas_df = pd.DataFrame()
-
+    _dpmo_under, _opps_under, _dpmo_top, _opps_top = read_data()
     # Getting previous hour timestamps
     now = datetime.now()
     
@@ -144,10 +156,12 @@ def atlas_update():
     
     return filter_underperforming_sort(atlas_df), filter_top_performing_pack(atlas_df)
 
+#_dpmo_under, _opps_under, _dpmo_top, _opps_top
+
 def filter_underperforming_sort(atlas_df):
     print("\nUnderperforming Sorters")
-    print("DPMO > 2,5000 && Opportunities > 2,000")
-    sorted_df = atlas_df[(atlas_df['DPMO'] >= 2500) & (atlas_df['Opportunities'] > 2000)].sort_values(by='Opportunities', ascending=False)
+    print("DPMO >", _dpmo_under, "&& Opportunities >", _opps_under)
+    sorted_df = atlas_df[(atlas_df['DPMO'] >= _dpmo_under) & (atlas_df['Opportunities'] > _opps_under)].sort_values(by='Opportunities', ascending=False)
     print(sorted_df)
 
     return sorted_df
@@ -155,7 +169,8 @@ def filter_underperforming_sort(atlas_df):
 def filter_top_performing_pack(atlas_df):
     print("\nTop Performing Sorters")
     print("DPMO < 2,500 && Opportunities > 1,000")
-    sorted_df = atlas_df[(atlas_df['DPMO'] <= 2500) & (atlas_df['Opportunities'] > 1000)].sort_values(by='Opportunities', ascending=False)
+    print("Opportunities Top Variable: ",_opps_top)
+    sorted_df = atlas_df[(atlas_df['DPMO'] <= _dpmo_top) & (atlas_df['Opportunities'] > _opps_top)].sort_values(by='Opportunities', ascending=False)
     print(sorted_df)
     return sorted_df
 
